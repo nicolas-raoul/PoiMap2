@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html>
-<!-- PoiMap2 - (c) 2013-08-05 by User:Mey2008 - de.wikivoyage.org -->
+<!-- PoiMap2  Version 2013-08-15 by User:Mey2008 - de.wikivoyage.org 
+     contributors: User:Torty3 (en.WV), User:Nicolas1981 (en.WV)
+
+     License: Affero GPL v3 or later http://www.gnu.org/licenses/agpl-3.0.html 
+-->
+<!-- recent changes: 
+  2013-08-15: + "uk" auto numbering
+  2013-08-15: Destinations distance for "ru" = +/- 10 degrees, destzoom = 7
+  2013-08-14: new button bar
+  2013-08-13: + "ru" auto numbering
+  2013-08-09: image= filename, no more short path "n/nn/", compatible with existing data
+  2013-08-08: remove tracker
+-->
+   
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,6 +26,7 @@
 <body>
 <div id="map">
     <script type="text/javascript" src="./lib/leaflet.js"></script>
+    <script type="text/javascript" src="./lib/buttons.js"></script>
     <script type="text/javascript" src="./lib/markers.js"></script>
     <script type="text/javascript" src="./lib/gpx.js"></script>
     <script type="text/javascript" src="./lib/locate.js"></script>
@@ -52,7 +66,11 @@ for($i=1; $i <= count($apart); $i++){
   $x[$i] = ($tags[2] + 0 ?: "0");
   $y[$i] = ($tags[3] + 0 ?: "0");
   $n[$i] = ($tags[4] ?: "NoName");
-  $f[$i] = (str_replace(" ","_",$tags[5]) ?: "no");
+  $f[$i] = (str_replace(" ","_",$tags[5]) ?: "0/01/no");
+  if (substr($f[$i],1,1) != "/") {
+    $md5 = md5($f[$i]);
+    $f[$i] = substr($md5,0,1) . "/" . substr($md5,0,2) . "/" . $f[$i];
+    }
   }
 $z = $i - 2;
 $nr = 1;
@@ -70,8 +88,8 @@ for($i=1; $i <= count($apart); $i++){
 
   $p[$z + $i] = (trim($map)   ?: "0");
 
-// automatic numbering for en version
-  if ( $lang == "en" ) {
+// automatic numbering for en & ru versions
+  if ( $lang == "en" || $lang == "ru" || $lang == "uk") {
     $p[$z + $i] = $nr;
     if(trim($type) == "" && trim($lat) !="") {
       $p[$z + $i] = $nother;
@@ -91,7 +109,11 @@ for($i=1; $i <= count($apart); $i++){
   $x[$z + $i] = (trim($lat)  + 0 ?: "0");
   $y[$z + $i] = (trim($long) + 0 ?: "0");
   $n[$z + $i] = (trim($name)  ?: "NoName");
-  $f[$z + $i] = (str_replace(" ","_",trim($image)) ?: "no");
+  $f[$z + $i] = (str_replace(" ","_",trim($image)) ?: "0/01/no");
+  if (substr($f[$z+$i],1,1) != "/") {
+    $md5 = md5($f[$z+$i]);
+    $f[$z+$i] = substr($md5,0,1) . "/" . substr($md5,0,2) . "/" . $f[$z+$i];
+    }
   }
 $max = $z + $i - 1;
 
@@ -136,7 +158,7 @@ $fixedcolor = strpos($gpxcontent, 'fixedcolor="yes"');
   var jfixcol = <?php echo $fixedcolor ?: "0"; ?>;
 
 // Make map 
-  var map = new L.Map('map', {center: new L.LatLng(jslat,jslon), zoom: jszoom});
+  var map = new L.Map('map', {center: new L.LatLng(jslat,jslon), zoom: jszoom, zoomControl: false});
   var markersAttribution = '';
   
 // Base layer "Mapquestopen"
@@ -221,7 +243,7 @@ if (jslayer.indexOf("S") != -1) {
   if (jsx[mi] != "0"){
     var tooltip = jsn[mi].replace('<br />','');
     var imgurl = '"http://' + jslang + '.m.wikivoyage.org/wiki/File:' + jsf[mi].substr(5) + '"';
-    if (jsf[mi] == "no"){
+    if (jsf[mi] == "0/01/no"){
       var content = jsn[mi];
       var minw = 10;
       var maxw = 240;
@@ -233,7 +255,7 @@ if (jslayer.indexOf("S") != -1) {
       var minw = 120;
       var maxw = 120;
     }
-    zio = 1000 - (mi * 2);
+    var zio = 1000 - (mi * 2);
     var marker = new L.Marker([jsx[mi], jsy[mi]], {title: tooltip  ,zIndexOffset: zio
       ,icon: new L.NumberedDivIcon({number: jsp[mi]  
       ,iconUrl: "./ico24/" + jsc[mi] + ".png"
@@ -247,11 +269,14 @@ if (jslayer.indexOf("S") != -1) {
 
 // Layer articles
   var articles = new L.LayerGroup();
+    var maxdist = 1;
+    var destzoom = 9;
+    if (jslang == "ru") {maxdist = 10; destzoom = 7;}
     content= '<img src="./img/art-photo.png" width="100" height="106"><br /><a href="http://' + 
       jslang + '.wikivoyage.org/wiki/';
     for (var i = 0; i < addressPoints.length; i++) {
     var a = addressPoints[i];
-    if (a[0] >= jslat-1 && a[0] <= jslat+1 && a[1] >= jslon-1.5 && a[1] <= jslon+1.5) {
+    if (a[0] >= jslat-maxdist && a[0] <= jslat+maxdist && a[1] >= jslon-(maxdist*1.5) && a[1] <= jslon+(maxdist*1.5)) {
       var title = a[2];
       var article = title.replace(/_/g, " ");
       var marker = new L.Marker(new L.LatLng(a[0], a[1]), { title: article});
@@ -263,6 +288,12 @@ if (jslayer.indexOf("S") != -1) {
     fill:false, weight:1
     }).addTo(articles);
     var circle = L.circle([jslat, jslon], 100000, {
+    fill:false, weight:1
+    }).addTo(articles);
+    var circle = L.circle([jslat, jslon], 500000, {
+    fill:false, weight:1
+    }).addTo(articles);
+    var circle = L.circle([jslat, jslon], 1000000, {
     fill:false, weight:1
     }).addTo(articles);
 
@@ -297,9 +328,11 @@ if (jslayer.indexOf("S") != -1) {
     'GPX tracks': tracks
     }
   ));
-  map.addControl(new L.Control.Scale());
 
+  map.addControl(new L.Control.Scale());
+  map.addControl(new L.Control.Buttons());
   map.addControl(new L.Control.Locate());
+  map.addControl('topright');
   
 function onAll(){
 map.removeLayer(articles);
@@ -311,23 +344,11 @@ map.fitBounds(markers.getBounds());
 function onDest(){
 map.removeLayer(markers);
 map.addLayer(articles);
-map.setView([jslat,jslon],9,true);
+map.setView([jslat,jslon],destzoom,true);
 };
  
 </script>
-
-<!-- Tracker does not collect personal data -->
-  <div id= "tracker">
-    <br /><br /> <!-- Botch adaptation for Android devices -->
-    <a href= "javascript:window.print()">
-      <img src=" ./img/print.png" alt= "Print screen" title= "Print screen"></a><br />
-    <a href= "javascript:void(0)" onclick= "onAll();">
-      <img src="./img/full.png" alt= "Show all" title= "Show me all markers"></a><br />
-    <a href="javascript:void(0)" onclick= "onDest();">
-      <img src= "./img/dest.png" alt= "Destinations" title= "Destinations (only geocoded)&#10;Circles: 50, 100 km distance"></a>
-    <script type= "text/javascript" src= "./lib/tracker.js"></script>
-    <script type= "text/javascript" src= "http://anormal-tracker.de/tracker.js"></script>
-  </div>
+ 
   <div id="logo">
     <img src="./img/logo.png" alt= "Logo" width= "40" height="40">
   </div>
