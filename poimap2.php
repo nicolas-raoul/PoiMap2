@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html>
-<!-- PoiMap2  Version 2013-08-15 by User:Mey2008 - de.wikivoyage.org 
+<!-- PoiMap2  Version 2013-08-18 by User:Mey2008 - de.wikivoyage.org 
      contributors: User:Torty3 (en.WV), User:Nicolas1981 (en.WV)
 
      License: Affero GPL v3 or later http://www.gnu.org/licenses/agpl-3.0.html 
 -->
 <!-- recent changes: 
+  2013-08-18: default values for URL parameters
+  2013-08-17: comment out error OK
   2013-08-15: + "uk" auto numbering
   2013-08-15: Destinations distance for "ru" = +/- 10 degrees, destzoom = 7
   2013-08-14: new button bar
@@ -42,8 +44,9 @@ $file= str_replace("\'","'",$_GET["name"]);
 $content = file_get_contents("http://" . $lang . ".wikivoyage.org/w/index.php?title=" . $file . "&action=raw");
 
 // Convert special strings
+// $content = strip_tags($content); 
 $content = str_ireplace(array('| ', ' |', '= ', ' =', '===', '&', '{{Listing', '{{vCard', '?lang=', '@'), array('|', '|', '=', '=', 'XXX', '%26', '{{listing', '{{listing', 'XxxxxX', 'X'),  $content);
-$content = preg_replace(array('/<!--.*-->/', '/==.*==/'), array('', '{{listing|type=**h2**|name=**SECTION**}}'), $content); 
+$content = preg_replace('/==.*==/', '{{listing|type=**h2**|name=**SECTION**}}', $content); 
 
 // Translate to english
 include 'trans/translate-' . $lang . '.php';
@@ -119,6 +122,7 @@ $max = $z + $i - 1;
 
 // Gpx data
 $gpxcontent = file_get_contents("http://" . $lang . ".wikivoyage.org/w/index.php?title=" . $file . "/Gpx&action=raw");
+// $gpxcontent = file_get_contents("http://" . $lang . ".wikivoyage.org/w/index.php?title=GPX:" . $file . "&action=raw");
 
 // gpx.js needs seq. file
 $fp = fopen("./tracks.gpx", "wb+");
@@ -141,10 +145,16 @@ $fixedcolor = strpos($gpxcontent, 'fixedcolor="yes"');
 // stop for testing // *** TEST ***
 
 // All arrays to js
-  var jslat   =  <?php echo $_GET["lat"] ?: "0";?>;
-  var jslon   =  <?php echo $_GET["lon"] ?: "0"; ?>;
-  var jszoom  =  <?php echo $_GET["zoom"] ?: "14"; ?>;
+  var jslat   =  '<?php echo $_GET["lat"] ?: "0";?>';
+  if (isNaN(jslat)) { jslat= "0";}
+  jslat =parseFloat(jslat);
+  var jslon   =  '<?php echo $_GET["lon"] ?: "0"; ?>';
+  if (isNaN(jslon)) { jslon= "0";}
+  jslon =parseFloat(jslon);
+  var jszoom  =  '<?php echo $_GET["zoom"] ?: "14"; ?>';
+  if (jslat == "0") {jszoom = "2";}
   var jslayer = '<?php echo $_GET["layer"] ?: "O"; ?>'.toUpperCase();
+  if (jslayer == "UNDEFINED") {jslayer = "O";}
   var jslang  = '<?php echo $_GET["lang"]; ?>'.toLowerCase();
 
   var jsmax = <?php echo $max; ?>;
