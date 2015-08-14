@@ -1,8 +1,8 @@
 /* image path changed - /images -> ../img  -- mey2008 */
 
 .leaflet-container .leaflet-control-locate {
-    margin-left: 13px;
-    margin-top: 12px;
+    margin-left: 10px;
+    margin-top: 10px;
 }
 
 .leaflet-control-locate a {
@@ -27,13 +27,13 @@
 }
 
 .leaflet-control-locate a {
-background-image: url(../img/locate.png);
+background-image: url(./images/locate.png);
 }
 
 .leaflet-control-locate.requesting a {
-    background-image: url(../img/spinner.gif);
+    background-image: url(./images/locate_spinner.gif);
 }
 
 .leaflet-control-locate.active a {
-    background-image: url(../img/locate_active.png);
+    background-image: url(./images/locate_active.png);
 }
